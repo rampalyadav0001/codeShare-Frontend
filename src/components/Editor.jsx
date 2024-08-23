@@ -6,7 +6,7 @@ import 'codemirror/mode/javascript/javascript';
 import 'codemirror/addon/edit/closetag';
 import 'codemirror/addon/edit/closebrackets';
 import { Actions } from '../Actions';
-const Editor = ({ socketRef, roomId }) => {
+const Editor = ({ socketRef, roomId,onCodeChange }) => {
  
   const editorRef = useRef(null);
   useEffect(() => {
@@ -27,6 +27,7 @@ const Editor = ({ socketRef, roomId }) => {
       
       const { origin } = change;
       const code = instance.getValue();
+      onCodeChange(code);
       if (origin !== 'setValue') {
         socketRef.emit(Actions.CODE_CHANGE, {
           roomId,
@@ -45,6 +46,7 @@ const Editor = ({ socketRef, roomId }) => {
     }
 
     return () => {
+      socketRef.off(Actions.CODE_CHANGE);
       editor.toTextArea();
     };
   }, [socketRef]);

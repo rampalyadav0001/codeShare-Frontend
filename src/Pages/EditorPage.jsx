@@ -20,6 +20,7 @@ import toast from 'react-hot-toast';
 
 const EditorPage = () => {
   const socketRef = useRef(null);
+  const codeRef = useRef(null);
   const location = useLocation();
   const reactNavigator = useNavigate();
   const { roomId } = useParams();
@@ -57,6 +58,10 @@ const EditorPage = () => {
               toast.success(`${username} joined the room`);
             }
             setClients(clients);
+            socketRef.current.emit(Actions.CODE_SYNC, { 
+              socketId, 
+              code: codeRef.current 
+            }); 
           }
         );
 
@@ -81,6 +86,19 @@ const EditorPage = () => {
       }
     };
   }, [roomId, location.state?.username, reactNavigator]);
+  const copyRoomId=async()=>{
+    try {
+      await navigator.clipboard.writeText(roomId);
+      toast.success('Room ID copied to clipboard');
+    } catch (error) { 
+      toast.error('Failed to copy room ID');
+      console.log('Failed to copy room ID', error);
+    } 
+  }
+  const leaveRoom = () => { 
+    socketRef.current.disconnect();
+    reactNavigator('/');
+  };
 
   if (!location.state) {
     return <Navigate to='/' />;
@@ -123,10 +141,10 @@ const EditorPage = () => {
 
         <div className='flex flex-col mt-auto'>
           <div className='flex space-x-4'>
-            <button className='bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded-lg transition-colors duration-300'>
+            <button onClick={copyRoomId} className='bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded-lg transition-colors duration-300'>
               Copy Room ID
             </button>
-            <button className='bg-red-600 hover:bg-red-700 text-white font-semibold py-2 px-4 rounded-lg transition-colors duration-300'>
+            <button onClick={leaveRoom} className='bg-red-600 hover:bg-red-700 text-white font-semibold py-2 px-4 rounded-lg transition-colors duration-300'>
               Leave
             </button>
           </div>
@@ -137,7 +155,7 @@ const EditorPage = () => {
       <div className='flex-grow bg-gray-700 p-4'>
         <div className='bg-gray-800 h-full rounded-lg p-4'>
           {socketRef.current && (
-            <Editor socketRef={socketRef.current} roomId={roomId} />
+            <Editor socketRef={socketRef.current} roomId={roomId} onCodeChange={(code)=>codeRef.current=code} />
           )}
         </div>
       </div>
