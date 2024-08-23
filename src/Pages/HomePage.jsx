@@ -67,7 +67,7 @@ function HomePage() {
               If you do not have an invite &nbsp;
               <a
                 onClick={createRoom}
-                className='text-blue-500 underline hover:text-blue-700'
+                className='text-blue-500 underline hover:text-blue-700 cursor-pointer'
               >
                 new room
               </a>

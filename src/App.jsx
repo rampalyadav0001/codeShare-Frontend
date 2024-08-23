@@ -6,12 +6,12 @@ function App() {
     <>
       <div>
         <Toaster
-          position="top-right"
+          position='top-right'
           toastOptions={{
             success: {
-              theme:{
-                primary:'#4aed88'
-              }
+              theme: {
+                primary: '#4aed88',
+              },
             },
           }}
         ></Toaster>
@@ -19,7 +19,7 @@ function App() {
       <BrowserRouter>
         <Routes>
           <Route path='/' element={<HomePage />} />
-          <Route path='/editor/:room-id' element={<EditorPage />} />
+          <Route path='/editor/:roomId' element={<EditorPage />} />
         </Routes>
       </BrowserRouter>
     </>

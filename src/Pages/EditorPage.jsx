@@ -1,4 +1,12 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
+import { initSocket } from '../socket';
+import { Actions } from '../Actions';
+import {
+  useLocation,
+  useNavigate,
+  useParams,
+  Navigate,
+} from 'react-router-dom';
 import {
   FiFileText,
   FiMessageSquare,
@@ -8,11 +16,77 @@ import {
   FiPenTool,
 } from 'react-icons/fi';
 import { Editor } from '../components';
+import toast from 'react-hot-toast';
+
 const EditorPage = () => {
-  const [clients, setClients] = useState([
-    { socketId: 1, username: 'Rampal Yadav' },
-    { socketId: 2, username: 'John Doe' },
-  ]);
+  const socketRef = useRef(null);
+  const location = useLocation();
+  const reactNavigator = useNavigate();
+  const { roomId } = useParams();
+  const [clients, setClients] = useState([]);
+  const initializedRef = useRef(false);
+
+  const handleErrors = (e) => {
+    console.log('Socket failed', e);
+    toast.error('Socket failed, try again');
+    reactNavigator('/');
+  };
+
+  useEffect(() => {
+    if (initializedRef.current) return; // Skip initialization if already done
+    initializedRef.current = true; // Set lock after first initialization
+
+    const init = async () => {
+      try {
+        socketRef.current = await initSocket();
+        socketRef.current.on('connect', () => {
+          console.log('Connected to server');
+        });
+        socketRef.current.on('connect_error', handleErrors);
+        socketRef.current.on('connect_failed', handleErrors);
+  
+        socketRef.current.emit(Actions.JOIN, {
+          roomId,
+          username: location.state?.username,
+        });
+
+        socketRef.current.on(
+          Actions.JOINED,
+          ({ clients, username, socketId }) => {
+            if (username !== location.state?.username) {
+              toast.success(`${username} joined the room`);
+            }
+            setClients(clients);
+          }
+        );
+
+        socketRef.current.on(Actions.DISCONNECTED, ({ username, socketId }) => {
+          toast.success(`${username} left the room`);
+          setClients((clients) =>
+            clients.filter((client) => client.socketId !== socketId)
+          );
+        });
+      } catch (error) {
+        handleErrors(error);
+      }
+    };
+
+    init();
+
+    return () => {
+      if (socketRef.current) {
+        socketRef.current.disconnect();
+        socketRef.current.off(Actions.JOINED);
+        socketRef.current.off(Actions.DISCONNECTED);
+      }
+    };
+  }, [roomId, location.state?.username, reactNavigator]);
+
+  if (!location.state) {
+    return <Navigate to='/' />;
+  }
+
+  // console.log("in codeEditor page", socketRef.current);
 
   return (
     <div className='bg-gray-900 w-screen h-screen text-white flex'>
@@ -34,7 +108,7 @@ const EditorPage = () => {
 
         <h2 className='text-lg font-bold mt-4'>Users</h2>
         <div className='mt-4 space-y-4'>
-          {clients.map(client => (
+          {clients.map((client) => (
             <div key={client.socketId} className='flex items-center space-x-3'>
               <div className='relative'>
                 <div className='w-10 h-10 rounded-full bg-purple-600 flex items-center justify-center text-lg font-bold'>
@@ -62,7 +136,9 @@ const EditorPage = () => {
       {/* Main Content */}
       <div className='flex-grow bg-gray-700 p-4'>
         <div className='bg-gray-800 h-full rounded-lg p-4'>
-          <Editor />
+          {socketRef.current && (
+            <Editor socketRef={socketRef.current} roomId={roomId} />
+          )}
         </div>
       </div>
     </div>
