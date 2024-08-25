@@ -5,26 +5,33 @@ import 'codemirror/theme/dracula.css';
 import 'codemirror/mode/javascript/javascript';
 import 'codemirror/addon/edit/closetag';
 import 'codemirror/addon/edit/closebrackets';
+import 'codemirror/mode/clike/clike';
+import 'codemirror/mode/python/python';
 import { Actions } from '../Actions';
-const Editor = ({ socketRef, roomId,onCodeChange }) => {
- 
+const Editor = ({ socketRef, roomId, onCodeChange, language }) => {
+
+  const language_id = {
+    javascript: 'javascript',
+    cpp: 'text/x-c++src',
+    python: 'python',
+  };
   const editorRef = useRef(null);
   useEffect(() => {
     const editor = CodeMirror.fromTextArea(
       document.getElementById('realTimeEditor'),
       {
         lineNumbers: true,
+        mode: language_id[language],
         theme: 'dracula',
-        mode: 'javascript',
         autoCloseTags: true,
         autoCloseBrackets: true,
       }
     );
     editor.setSize('100%', '100%');
+   
     editorRef.current = editor;
     // Code change event
     editorRef.current.on('change', (instance, change) => {
-      
       const { origin } = change;
       const code = instance.getValue();
       onCodeChange(code);
@@ -36,12 +43,11 @@ const Editor = ({ socketRef, roomId,onCodeChange }) => {
       }
     });
     // listen for code change
-    if(socketRef){
+    if (socketRef) {
       socketRef.on(Actions.CODE_CHANGE, ({ code }) => {
-        console.log('Code change event', code);
-       if(code!==null){
-        editorRef.current.setValue(code);
-       }
+        if (code !== null) {
+          editorRef.current.setValue(code);
+        }
       });
     }
 
@@ -49,7 +55,7 @@ const Editor = ({ socketRef, roomId,onCodeChange }) => {
       socketRef.off(Actions.CODE_CHANGE);
       editor.toTextArea();
     };
-  }, [socketRef]);
+  }, [socketRef,language]);
   return (
     <textarea
       id='realTimeEditor'
